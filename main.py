@@ -17,10 +17,10 @@ def main():
 
     #####SELECT SIM PARAMETERS#####
     # Model: choose only one, commandline mode selection will override script mode selection!!
-    en_real_sensor = 0  # one timestep for each lidar ray -> motion distortion included
+    en_real_sensor = 1  # one timestep for each lidar ray -> motion distortion included
     en_model0 = 0  # one timestep for each lidar rotation -> no motion distortion
     en_model1 = 0  # one timestep per rotation -> motion distortin via interpolation of ego vehicle
-    en_model2 = 1  # one timestep per rotation -> motion distortin via interpolation of ego and target vehicle
+    en_model2 = 0  # one timestep per rotation -> motion distortin via interpolation of ego and target vehicle
     en_model3 = 0  # one timestep per rotation -> motion distortion via interpolation of ego vehicle and target vertices
     # Calculation Mode: choose one
     # numba           = None
@@ -33,10 +33,10 @@ def main():
     #scenario_name = "Scenario_debug"
     # Additional options
     #####SIMULATION PARAMETERS#####
-    T_SIM = 3  # only multiples of 1/20 = 0.05 (turning time)
+    T_SIM = 5  # only multiples of 1/20 = 0.05 (turning time)
 
     profiling = 0
-    viewer = 1
+    viewer = 0
 
     #######MODE SELECTION VIA COMMANDLINE
     if len(sys.argv) > 1:

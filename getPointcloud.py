@@ -73,7 +73,7 @@ def getPointCloudDocDummy(ego_x_y_th,
                             Can be None if no dynamic targets exist, else it is shape (#vectoes, 2)  where 2 stands for x and y. dtype=float64
     :param _n_rays: number of rays within one lidar rotation dtype=int
     :param alpha_init: angle at which lidar starts to scan, in vehicle coordinate system. dtype=float
-                    if _fov < 360° then alpha_init needs to alternate between maximal and minimal angle for each scanning frame
+                    if _fov < 360deg then alpha_init needs to alternate between maximal and minimal angle for each scanning frame
     :param _fov: field of view of the lidar.
     :param _alpha_inc: the angular increment of the lidar angle for each ray
     :param _lidarmountx: x coordinate of mounting position of the lidar in vehicle coordinate system. dtype=float64

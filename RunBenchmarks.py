@@ -4,8 +4,8 @@ import os
 
 def sweepScenarios():
     T_SIM = "5"
-    for i in range(10):
-        Scenario = "Scenario_B_S"+str(i)
+    for i in range(19):
+        Scenario = "Scenario_B_SD"+str(2*i)
         sweepmodes(Scenario, T_SIM)
 
 def sweepmodes(Scenario, T_SIM):
@@ -15,4 +15,7 @@ def sweepmodes(Scenario, T_SIM):
     os.system("python main.py model2 " + Scenario + " " + T_SIM)
     os.system("python main.py model3 " + Scenario + " " + T_SIM)
 
-sweepScenarios()
+if __name__ == '__main__':
+    #sweepScenarios()
+    sweepmodes(Scenario="Scenario_Benchmark", T_SIM="5")
+

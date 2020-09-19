@@ -3,7 +3,6 @@ from numpy import inf
 
 from numba import njit, float64,float32, int32, int64   #short for @jit(nopython = True)
 
-
 @njit(float64[:](float64, float64, float64, float64, float64, int64, float64[:,:], float64[:,:]))
 def getRayIntersection(COSALPHA, SINALPHA, lidar_x, lidar_y, _d_max, num_segs, vertices, line_vecs):
     '''
