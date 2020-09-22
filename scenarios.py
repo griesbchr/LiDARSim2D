@@ -5,7 +5,7 @@ from data import StaticTarget
 from data import Scene
 
 def getScenarioNames():
-    return ["Scenario_Benchmark", "Scenario1", "Scenario_only_ego", "Scenario_not_implemented", "Scenario_debug", "Scenario_crossing",
+    return ["Scenario_crossing", "Scenario_Benchmark", "Scenario1", "Scenario_only_ego", "Scenario_not_implemented", "Scenario_debug", "Scenario_TargetLaneTurnIn",
             "Scenario_B_S0",
             "Scenario_B_S1",
             "Scenario_B_S2",
@@ -18,6 +18,39 @@ def getScenarioNames():
             "Scenario_B_S9",
 
             ] #has to match name of Function without "get"
+
+def getScenario_TargetLaneTurnIn(TSIM, realsensor):
+    scene = getStaticScene4()
+
+    egocar = data.EgoCar()
+    egocar.init((0,-1.5,0), 30)    #((x_init, y_init, theta_init), velocity_init)
+
+    targetcar1 = data.TargetCar()  # Adds car to target to TargetCar.targetlist -> Class variable!!
+    targetcar1.init((65, 1.5, 180), 20)  # ((x_init, y_init, theta_init), velocity_init)
+
+    if realsensor:
+        idxperturn = egocar._n_rays      #calculating time indices for 1 turn
+    else:
+        idxperturn = 1
+
+
+    w_value2 = 58
+    w_curve2 = np.full(3*idxperturn, w_value2)         #curve left, -w_curve is curve right
+    w_0 = np.full(3*idxperturn, 0)                  #no curve
+    w_leftturn = np.stack((w_0, w_curve2, w_curve2, w_0, w_0, w_0, -w_curve2, -w_curve2))
+
+    #Initialize Target cars w vectors in w_target_list, can be changed the same way as w_ego
+    if len(data.TargetCar.targetlist) > 0:
+        w_target_list = [None for i in range(len(data.TargetCar.targetlist))] #Initing as None means targets drive straight
+
+        w_target_list[0] = w_leftturn.flatten()
+    else:
+        w_target_list = None
+
+    scenario = data.Scenario(TSIM, realsensor, scene, egocar, targetlist=data.TargetCar.targetlist, w_target_list=w_target_list)
+
+    return scenario
+
 
 def getScenario_Benchmark(TSIM, realsensor):
     '''
@@ -56,7 +89,7 @@ def getScenario_Benchmark(TSIM, realsensor):
     targetcar8 = data.TargetCar()
     targetcar8.init((32.5,26,-90),15)
 
-    #Initializing w-vector that defines movement of egocar
+    #Initializing w-vector that defines movement of cars
     w_value = 60
     w_value2 = 76.5
     if realsensor:
@@ -163,14 +196,13 @@ def getScenario_debug(TSIM, realsensor):
 
 
 def getScenario_crossing(TSIM, realsensor):
-    scene = getStaticScene4()
+    scene = getStaticScenecrossing()
 
     egocar = data.EgoCar()
-    egocar.init((-egocar._L + egocar._foh,-1.5,0), 15)
+    egocar.init((0,0,0), 15)
 
     targetcar1 = data.TargetCar()   #Adds car to target to TargetCar.targetlist -> Class variable!!
-    targetcar1.init((-egocar._L + egocar._foh+35,20,-90),15) #((x_init, y_init, theta_init), velocity_init)
-
+    targetcar1.init((42,30,-90),15) #((x_init, y_init, theta_init), velocity_init)
 
     scenario = data.Scenario(TSIM, realsensor, scene, egocar, targetlist=data.TargetCar.targetlist)
 
@@ -775,6 +807,22 @@ def getStaticScene1():
     obj6 = StaticTarget([(0, 10), (10, 3), (5, 5)])  # upper Triangle
 
     return Scene([obj1])
+
+def getStaticScenecrossing():
+    '''Function so set instance of Scene Class
+        Output: Instance of Scene Class '''
+
+    # Initialize Testing Objects
+    obj1 = StaticTarget([(10, -5), (10, 5), (16, 5), (16, -5)])  # Rectangle
+    obj2 = StaticTarget([(20, -20), (20, 20), (22, 20), (22, -20)])  # Wall
+    obj3 = StaticTarget([(20, -5), (20, 5), (26, 4), (26, -4)])  # Trapezoid middle moved to right
+    obj4 = StaticTarget([(0, -10), (10, -3), (5, -5)])  # Lower Triangle
+    obj5 = StaticTarget([(10, -5), (10, 5), (16, 4), (16, -4)])  # Trapezoid middle
+    obj6 = StaticTarget([(0, 10), (10, 3), (5, 5)])  # upper Triangle
+    obj7 = StaticTarget([(10, 5), (30, 5), (30, 7), (10, 7)])
+    obj8 = StaticTarget([(35, -3), (40, -3), (40, -9), (33, -10)])
+
+    return Scene([obj7, obj8])
 
 def getStaticScene2():
     '''Function so set instance of Scene Class

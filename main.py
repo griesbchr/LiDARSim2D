@@ -27,16 +27,17 @@ def main():
     rt = 1
     #regular = 0
     # Select Scenario
-    #scenario_name = "Scenario_crossing"
+    scenario_name = "Scenario_crossing"
     # scenario_name = "Scenario_only_ego"
-    scenario_name = "Scenario_Benchmark"
+    #scenario_name = "Scenario_Benchmark"
+    #scenario_name = "Scenario_TargetLaneTurnIn"
     #scenario_name = "Scenario_debug"
     # Additional options
     #####SIMULATION PARAMETERS#####
-    T_SIM = 5  # only multiples of 1/20 = 0.05 (turning time)
+    T_SIM = 4  # only multiples of 1/20 = 0.05 (turning time)
 
     profiling = 0
-    viewer = 0
+    viewer = 1
 
     #######MODE SELECTION VIA COMMANDLINE
     if len(sys.argv) > 1:
@@ -201,9 +202,10 @@ def main():
     print("shape PC = ", pointcloud.shape)
 
     ##############PLOTTING SIMULATION RESULTS################
+    print("T_STEP=", scenario.T_STEP)
     if viewer:
         sceneViewer(scenario.ego_x_y_th, scenario.target_x_y_th, pointcloud, simmode, scenario.scene, scenario.egocar,
-                    scenario.targetlist, scenesight=False)
+                    scenario.targetlist, scenario.T_STEP, scenesight=True)
 
 
 if __name__ == '__main__':

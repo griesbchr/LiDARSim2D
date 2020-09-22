@@ -540,18 +540,16 @@ class MainWindow(QtWidgets.QMainWindow):
         PC_iter_y = self.pointcloud_realsensor[:, :,1].flat  # creates an iterator over the PC that allows direct indexing with sliderval
         PC_iter_d = self.pointcloud_realsensor[:, :,2].flat  # creates an iterator over the PC that allows direct indexing with sliderval
 
-        if self.scenario.egocar._fov != 360:
-            #counterclockwise = (not self.scenario.egocar._counterclockwise) if (
-            #            (self.current_tstep // self.scenario.egocar._n_rays) % 2) else self.scenario.egocar._counterclockwise
-            counterclockwise = self.scenario.egocar.counterclockwise
-        else:
-            counterclockwise = self.scenario.egocar._counterclockwise
+
+        counterclockwise = self.scenario.egocar.counterclockwise
 
         if counterclockwise:
             alpha = self.scenario.egocar.alpha_init + self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
         else:
-            alpha = self.scenario.egocar.alpha_init + self.scenario.egocar._fov - self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+            alpha = self.scenario.egocar.alpha_init - self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
         alpha += self.scenario.ego_x_y_th[self.current_tstep][2]
+        print("counterclockwise_update Realsensor", counterclockwise)
+        print("alpha_update realsensor", alpha)
         alpha_rad = np.deg2rad(alpha)
         dist = self.scenario.egocar._d_max if np.isinf(PC_iter_d[self.current_tstep]) else PC_iter_d[self.current_tstep]
         hit_x = self.lidar_xy[0][0] + dist * np.cos(alpha_rad)

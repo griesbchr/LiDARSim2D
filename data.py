@@ -108,8 +108,8 @@ class EgoCar(Car):
     def __init__(self):
         super().__init__()
         self.alpha_init = float(0)   #only positiv values!  #lidar angle starting value
-        self._fov = 120                                  #always starts scanning in middle of fov, center is selected by alpha_int
-        self._d_max = 20.0                                  # in m, has to be float -> add .0 to end
+        self._fov = 60                                  #always starts scanning in middle of fov, center is selected by alpha_int
+        self._d_max = 50.0                                  # in m, has to be float -> add .0 to end
         self._turning_freq = 10                    #Frequency for a FULL turn, even if fov != 360°
         self._alpha_inc_value = float(0.4)                  # in deg, 360/alpha_inc needs to be an int!! #default is 0.4deg
         self._counterclockwise = False                       #init value   #by default mathematical positive turning direction, is starting direction for fov != 360°
@@ -121,13 +121,12 @@ class EgoCar(Car):
         self._alpha_inc = self._alpha_inc_value     #if self._counterclockwise else -self._alpha_inc_value
         self._turning_time = 1 / self._turning_freq         #Turning time for a FULL turn, even if fov != 360°
 
-        if self._fov == 360:
-                self._n_rays = round(self._fov / self._alpha_inc_value)
+        self._n_rays = round(self._fov / self._alpha_inc_value)
 
+        if self._fov == 360:
                 # used to keep track of CURRENT state of lidar sensor, they therefore may change during runtime
                 self.current_alpha = self.alpha_init
         else:
-            self._n_rays = round(self._fov / self._alpha_inc_value)
             self.alpha_max = int(self._fov / 2) + self.alpha_init
             self.alpha_min = -int(self._fov / 2) + self.alpha_init
 
@@ -253,8 +252,8 @@ class Scenario():
         :return:
         '''
         if self.realsensor:
-            self.T_STEP = (1 / (
-                    self.egocar._turning_freq * self.egocar._n_rays)) * self.egocar._fov / 360  # one sim step for each ray
+            #self.T_STEP = (1 / (self.egocar._turning_freq * self.egocar._n_rays)) * self.egocar._fov / 360  # one sim step for each ray
+            self.T_STEP = (1 / (self.egocar._turning_freq * self.egocar._n_rays))  # one sim step for each ray
             self.t = np.arange(0, self.TSIM, self.T_STEP)
             self.n_turns = int(len(self.t) / self.egocar._n_rays)  # number of lidar rotations
         else:
@@ -263,13 +262,14 @@ class Scenario():
                                self.TSIM)  # arange function doesnt include last step (T_SIM), append it manually
             self.n_turns = int(len(self.t) - 1)
 
-    def getPCargs(self, model, turn_index = None, prev_index = None):
+    def getPCargs(self, model, curr_index = None, prev_index = None):
         '''
         Function that extracts all the needed arguments to calculate Pointcloud and returns them as tuple
         The time index starts at 1 to ensure that there is a previous time step which is needed for
         the interpolation models.
         :return:
         '''
+
 
         if model == "realsensor_fullscenario":
             self._n_turns = int(len(self.t) / self.egocar._n_rays)      #only needed for "full information problem"
@@ -284,7 +284,7 @@ class Scenario():
 
         if len(self.targetlist) > 0:
 
-            target_x_y_th_list = [i[[turn_index]] for i in self.target_x_y_th]  #extracts list of target_x_y_th for current timestep
+            target_x_y_th_list = [i[[curr_index]] for i in self.target_x_y_th]  #extracts list of target_x_y_th for current timestep
             target_x_y_th = np.stack(target_x_y_th_list)  # converts list of np arrays to a single (#cars, 1, 3) numpy array (1 is timesteps, 3 are coords)
             lowerleft = np.repeat(self.egocar._lowerleft, len(self.targetlist), axis=0)
             lowerright = np.repeat(self.egocar._lowerright, len(self.targetlist), axis=0)
@@ -297,12 +297,22 @@ class Scenario():
             target_vertices = None
             target_line_vecs = None
 
+        if self.realsensor:
+            turn_index = curr_index // self.egocar._n_rays
+        else:
+            turn_index = curr_index
+        self.egocar.counterclockwise = not(self.egocar._counterclockwise) if turn_index%2 else self.egocar._counterclockwise
+        print("counterclockwise_getPCargs:", self.egocar.counterclockwise)
+        print("curr_idx", curr_index)
+        print("turn index_getPCargs", turn_index)
+
         if model == "realsensor":
-            ego_x_y_th = self.ego_x_y_th[turn_index]
+
+            ego_x_y_th = self.ego_x_y_th[curr_index]
 
             PC_update = False
             #updating current lidar position and turning direction
-            if turn_index != 0:
+            if curr_index != 0:
                 alpha_inc = self.egocar._alpha_inc if self.egocar.counterclockwise else - self.egocar._alpha_inc
                 self.egocar.current_alpha +=  alpha_inc
 
@@ -335,25 +345,28 @@ class Scenario():
                     self.egocar._d_max, self.egocar._lidarmountx, self.egocar._lidarmounty,
                     self.egocar.current_alpha, PC_update)
             return args
+
         if model == "model0":
             if self.egocar._fov != 360:
                 self.egocar.alpha_init = self.egocar.alpha_min
-            ego_x_y_th = self.ego_x_y_th[turn_index]
+            ego_x_y_th = self.ego_x_y_th[curr_index]
 
             args = (ego_x_y_th,
                     self.scene.vertices, self.scene.line_vecs, target_vertices,target_line_vecs,
                     self.egocar._n_rays, self.egocar.alpha_init, self.egocar._fov,self.egocar._alpha_inc,
                     self.egocar._lidarmountx, self.egocar._lidarmounty, self.egocar._d_max)
+
         if model == "model1":
             if self.egocar._fov != 360 and turn_index != 0:
-                self.egocar.counterclockwise = not(self.egocar.counterclockwise)
+                #self.egocar.counterclockwise = not(self.egocar.counterclockwise)
                 self.egocar.alpha_init = self.egocar.alpha_min if self.egocar.counterclockwise else self.egocar.alpha_max
             #prep ego interpolation
-            ego_x_y_th = self.ego_x_y_th[turn_index]
+            ego_x_y_th = self.ego_x_y_th[curr_index]
             if prev_index is not None:
                 ego_x_y_th_prev = self.ego_x_y_th[prev_index]
             else:
-                ego_x_y_th_prev = self.ego_x_y_th[turn_index - 1]
+                ego_x_y_th_prev = self.ego_x_y_th[curr_index - 1]
+
 
             args =  (ego_x_y_th, ego_x_y_th_prev,
                      self.scene.vertices, self.scene.line_vecs, target_vertices, target_line_vecs,
@@ -362,10 +375,10 @@ class Scenario():
                      self.egocar.counterclockwise, self.egocar._d_max)
         if model == "model2":
             if self.egocar._fov != 360 and turn_index != 0:
-                self.egocar.counterclockwise = not(self.egocar.counterclockwise)
+                #self.egocar.counterclockwise = not(self.egocar.counterclockwise)
                 self.egocar.alpha_init = self.egocar.alpha_min if self.egocar.counterclockwise else self.egocar.alpha_max
             #prep ego interpolation
-            ego_x_y_th = self.ego_x_y_th[turn_index]
+            ego_x_y_th = self.ego_x_y_th[curr_index]
             if prev_index is not None:
                 ego_x_y_th_prev = self.ego_x_y_th[prev_index]
                 #prep target interpolation
@@ -374,10 +387,10 @@ class Scenario():
                     target_x_y_th_prev = np.stack(target_x_y_th_prev_list)  # converts list of np arrays to a single (#cars, 1, 3) numpy array (1 is timesteps, 3 are coords)
 
             else:
-                ego_x_y_th_prev = self.ego_x_y_th[turn_index - 1]
+                ego_x_y_th_prev = self.ego_x_y_th[curr_index - 1]
                 #prep target interpolation
             if len(self.targetlist) > 0:
-                target_x_y_th_prev_list = [i[[turn_index - 1]] for i in self.target_x_y_th]  # extracts list of target_x_y_th for current timestep
+                target_x_y_th_prev_list = [i[[curr_index - 1]] for i in self.target_x_y_th]  # extracts list of target_x_y_th for current timestep
                 target_x_y_th_prev = np.stack(target_x_y_th_prev_list)  # converts list of np arrays to a single (#cars, 1, 3) numpy array (1 is timesteps, 3 are coords)
             else:
                 target_x_y_th_prev = None
@@ -395,10 +408,10 @@ class Scenario():
                     self.egocar.counterclockwise, self.egocar._d_max)
         if model == "model3":
             if self.egocar._fov != 360 and turn_index != 0:
-                self.egocar.counterclockwise = not(self.egocar.counterclockwise)
+                #self.egocar.counterclockwise = not(self.egocar.counterclockwise)
                 self.egocar.alpha_init = self.egocar.alpha_min if self.egocar.counterclockwise else self.egocar.alpha_max
             #prep ego interpolation
-            ego_x_y_th = self.ego_x_y_th[turn_index]
+            ego_x_y_th = self.ego_x_y_th[curr_index]
             if prev_index is not None:
                 ego_x_y_th_prev = self.ego_x_y_th[prev_index]
                 # prep target vertices interpolation
@@ -412,10 +425,10 @@ class Scenario():
                                                                                        upperright, target_x_y_th_prev)
 
             else:
-                ego_x_y_th_prev = self.ego_x_y_th[turn_index - 1]
+                ego_x_y_th_prev = self.ego_x_y_th[curr_index - 1]
                 #prep target vertices interpolation
             if len(self.targetlist) > 0:
-                target_x_y_th_prev_list = [i[[turn_index - 1]] for i in self.target_x_y_th]  # extracts list of target_x_y_th for current timestep
+                target_x_y_th_prev_list = [i[[curr_index - 1]] for i in self.target_x_y_th]  # extracts list of target_x_y_th for current timestep
                 target_x_y_th_prev = np.stack(target_x_y_th_prev_list)  # converts list of np arrays to a single (#cars, 1, 3) numpy array (1 is timesteps, 3 are coords)
                 target_vertices_prev, target_line_vecs_prev = getTargetcarVertices(lowerleft, lowerright, upperleft,
                                                                                    upperright, target_x_y_th_prev)
