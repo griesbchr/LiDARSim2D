@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget_simcontrol">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tab_viewer">
        <attribute name="title">
@@ -437,7 +437,7 @@
                 <set>Qt::ImhDigitsOnly</set>
                </property>
                <property name="text">
-                <string>1.6</string>
+                <string>4</string>
                </property>
               </widget>
              </item>
@@ -458,6 +458,9 @@
               <widget class="QCheckBox" name="checkBox_realsensor">
                <property name="text">
                 <string>Simulate real sensor</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -655,7 +658,7 @@
      <x>0</x>
      <y>0</y>
      <width>1127</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
@@ -702,7 +705,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup"/>
   <buttongroup name="buttonGroup_2"/>
+  <buttongroup name="buttonGroup"/>
  </buttongroups>
 </ui>

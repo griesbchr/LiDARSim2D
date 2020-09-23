@@ -442,7 +442,8 @@ class MainWindow(QtWidgets.QMainWindow):
         :return:
         '''
         self.getPointCloud_realsensor()
-        alpha = self.scenario.egocar.alpha_init if self.scenario.egocar._counterclockwise else self.scenario.egocar.alpha_init + self.scenario.egocar._fov
+        #alpha = self.scenario.egocar.alpha_min if self.scenario.egocar._counterclockwise else self.scenario.egocar.alpha_max
+        alpha = self.scenario.egocar.current_alpha
         alpha += self.scenario.ego_x_y_th[0][2]
         alpha_rad = np.deg2rad(alpha)
         dist = self.scenario.egocar._d_max if np.isinf(self.pointcloud_realsensor[0, 0, 2]) else self.pointcloud_realsensor[0, 0, 2]
@@ -540,16 +541,22 @@ class MainWindow(QtWidgets.QMainWindow):
         PC_iter_y = self.pointcloud_realsensor[:, :,1].flat  # creates an iterator over the PC that allows direct indexing with sliderval
         PC_iter_d = self.pointcloud_realsensor[:, :,2].flat  # creates an iterator over the PC that allows direct indexing with sliderval
 
-
-        counterclockwise = self.scenario.egocar.counterclockwise
-
-        if counterclockwise:
-            alpha = self.scenario.egocar.alpha_init + self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+        #counterclockwise = self.scenario.egocar.counterclockwise
+        if self.scenario.egocar._fov == 360:
+            counterclockwise = self.scenario.egocar._counterclockwise
+            if counterclockwise:
+                alpha = self.scenario.egocar.alpha_init + self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+            else:
+                alpha = self.scenario.egocar.alpha_init - self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
         else:
-            alpha = self.scenario.egocar.alpha_init - self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+            counterclockwise = not(self.scenario.egocar._counterclockwise) if self.current_turn % 2 else self.scenario.egocar._counterclockwise
+            if counterclockwise:
+                alpha = self.scenario.egocar.alpha_min + self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+            else:
+                alpha = self.scenario.egocar.alpha_max - self.scenario.egocar._alpha_inc * (self.current_tstep % self.scenario.egocar._n_rays)
+
         alpha += self.scenario.ego_x_y_th[self.current_tstep][2]
-        print("counterclockwise_update Realsensor", counterclockwise)
-        print("alpha_update realsensor", alpha)
+
         alpha_rad = np.deg2rad(alpha)
         dist = self.scenario.egocar._d_max if np.isinf(PC_iter_d[self.current_tstep]) else PC_iter_d[self.current_tstep]
         hit_x = self.lidar_xy[0][0] + dist * np.cos(alpha_rad)

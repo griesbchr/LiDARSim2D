@@ -12,8 +12,15 @@ from numba.types import  float64, int64, int32, boolean
 #@njit(float64[:,:,:](float64[:], int64, float64[:,:], float64[:,:], float64[:,:], int64, int64, float64, int64, float64, int64, float64[:,:], int64, int64, float64[:], float64[:], float64[:], float64[:]))
 def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_vecs, _n_rays, alpha_init, _alpha_inc, _d_max, _lidarmountx, _lidarmounty, target_x_y_th, fov, counterclockwise, _lowerleft, _lowerright, _upperleft, _upperright):
     pointcloud = np.zeros((_n_turns, _n_rays, 3))  # x, y, distance (nan if no hit)
-    alpha_cw = np.arange(alpha_init+fov, alpha_init, -abs(_alpha_inc))
-    alpha_ccw = np.arange(alpha_init, alpha_init + fov, abs(_alpha_inc))
+    if fov == 360:
+        alpha_cw = np.arange(alpha_init+fov, alpha_init, -abs(_alpha_inc))
+        alpha_ccw = np.arange(alpha_init, alpha_init + fov, abs(_alpha_inc))
+    else:
+        alpha_max = int(fov / 2) + alpha_init
+        alpha_min = -int(fov / 2) + alpha_init
+        alpha_cw = np.arange(alpha_max, alpha_min, -abs(_alpha_inc))
+        alpha_ccw = np.arange(alpha_min, alpha_max, abs(_alpha_inc))
+
     lidar_xy = sensorpos2global(np.zeros((len(t), 2)), _lidarmountx, _lidarmounty, ego_x_y_th)
 
     if target_x_y_th is not None:
