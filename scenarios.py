@@ -5,7 +5,7 @@ from data import StaticTarget
 from data import Scene
 
 def getScenarioNames():
-    return ["Scenario_crossing", "Scenario_Benchmark", "Scenario1", "Scenario_only_ego", "Scenario_not_implemented", "Scenario_debug", "Scenario_TargetLaneTurnIn",
+    return ["Scenario_crossing", "Scenario_overtake", "Scenario1", "Scenario_only_ego", "Scenario_not_implemented", "Scenario_debug", "Scenario_TargetLaneTurnIn",
             "Scenario_B_S0",
             "Scenario_B_S1",
             "Scenario_B_S2",
@@ -52,7 +52,7 @@ def getScenario_TargetLaneTurnIn(TSIM, realsensor):
     return scenario
 
 
-def getScenario_Benchmark(TSIM, realsensor):
+def getScenario_overtake(TSIM, realsensor):
     '''
     A scenario contains stationary and moving objects.
         Stationary objects are defined with the Scene class which contains instances of the StaticTarget class.

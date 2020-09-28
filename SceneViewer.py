@@ -302,10 +302,6 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.ui.radioButton_model3.isChecked():
             self.simmode = 3
 
-        if self.ui.checkBox_calcnumba.isChecked():
-            self.enable_numba = 1
-        else:
-            self.enable_numba = 0
         #Realsensor
         if self.ui.checkBox_realsensor.isChecked():
             self.realsensor = 1
@@ -610,12 +606,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             target_x_y_th = None
             target_x_y_th_prev = None
-
-        if self.enable_numba:
-            #ego_x_y_th = self.scenario.ego_x_y_th[current_tstep]
-            #ego_x_y_th_prev = self.scenario.ego_x_y_th[prev_tstep]
-            print("not implemented")
-            return
 
         if self.simmode == 0:
             #self.pointcloud = getPointCloudModel0(self.scenario.egocar, self.scenario.targetlist, self.scenario.scene, self.scenario.ego_x_y_th[current_tstep], target_x_y_th)

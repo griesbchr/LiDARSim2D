@@ -22,19 +22,20 @@ def main():
     en_model1 = 0  # one timestep per rotation -> motion distortin via interpolation of ego vehicle
     en_model2 = 1  # one timestep per rotation -> motion distortin via interpolation of ego and target vehicle
     en_model3 = 0  # one timestep per rotation -> motion distortion via interpolation of ego vehicle and target vertices
+
     # Calculation Mode: choose one
     # numba           = None
     rt = 1
-    #regular = 0
+
     # Select Scenario
     scenario_name = "Scenario_crossing"
     # scenario_name = "Scenario_only_ego"
     #scenario_name = "Scenario_Benchmark"
     #scenario_name = "Scenario_TargetLaneTurnIn"
     #scenario_name = "Scenario_debug"
-    # Additional options
-    #####SIMULATION PARAMETERS#####
-    T_SIM = 4  # only multiples of 1/20 = 0.05 (turning time)
+
+    # Additional parameters
+    T_SIM = 4  # only multiples of turning time
 
     profiling = 0
     viewer = 1
@@ -97,10 +98,7 @@ def main():
 
     for time_index in np.arange(len(scenario.t)):
         if en_real_sensor:
-            #    if regular:
-            #        calcmode = 'regular'
-            #        pointcloud = getPointcloud.getPointCloudRealSensor(*scenario.getPCargs("realsensor_fullscenatio"))
-            #        break
+
             if rt:
                 calcmode = "realtime"
                 args = scenario.getPCargs("realsensor", time_index)
@@ -123,11 +121,7 @@ def main():
                     pr.disable()  # for profiling
 
         elif en_model0:
-            # if regular:
-            #    calcmode = 'regular'
-            #    pointcloud = getPointcloud.getPointCloudModel0(t, _n_turns, ego_x_y_th, scene.vertices, scene.line_vecs,
-            #                                                egocar._n_rays, egocar.alpha_init, egocar._alpha_inc,egocar._d_max, egocar._lidarmountx,egocar._lidarmounty,
-            #                                                target_x_y_th, egocar._fov,Car._lowerleft, Car._lowerright, Car._upperleft, Car._upperright)
+
             if rt:
                 calcmode = "realtime"
                 args = scenario.getPCargs("model0", time_index)
@@ -136,11 +130,7 @@ def main():
                 pr.disable()  # for profiling
 
         elif en_model1:
-            # if regular:
-            #    calcmode = 'regular'
-            #    pointcloud = getPointcloud.getPointCloudModel1(t, _n_turns, ego_x_y_th, scene.vertices, scene.line_vecs,
-            #                                                      egocar._n_rays, egocar.alpha_init, egocar._alpha_inc,egocar._d_max, egocar._lidarmountx,egocar._lidarmounty,
-            #                                                   target_x_y_th, egocar._fov, egocar._counterclockwise, Car._lowerleft, Car._lowerright, Car._upperleft, Car._upperright)
+
             if rt:
                 calcmode = "realtime"
                 args = scenario.getPCargs("model1", time_index)
@@ -149,11 +139,7 @@ def main():
                 pr.disable()
 
         elif en_model2:
-            # if regular:
-            #    calcmode = 'regular'
-            #    pointcloud = getPointcloud.getPointCloudModel2(t, _n_turns, ego_x_y_th, scene.vertices, scene.line_vecs,
-            #                                                      egocar._n_rays, egocar.alpha_init, egocar._alpha_inc,egocar._d_max, egocar._lidarmountx,egocar._lidarmounty,
-            #                                                      target_x_y_th, egocar._fov, egocar._counterclockwise, Car._lowerleft,Car._lowerright, Car._upperleft, Car._upperright)
+
             if rt:
                 calcmode = "realtime"
                 args = scenario.getPCargs("model2", time_index)
@@ -162,11 +148,7 @@ def main():
                 pr.disable()
 
         elif en_model3:
-            # if regular:
-            #    calcmode = 'regular'
-            #    pointcloud = getPointcloud.getPointCloudModel3(t, _n_turns, ego_x_y_th, scene.vertices, scene.line_vecs,
-            #                                                      egocar._n_rays, egocar.alpha_init, egocar._alpha_inc,egocar._d_max, egocar._lidarmountx,egocar._lidarmounty,
-            #                                                      target_x_y_th, egocar._fov, egocar._counterclockwise, Car._lowerleft, Car._lowerright, Car._upperleft, Car._upperright)
+
             if rt:
                 calcmode = "realtime"
                 args = scenario.getPCargs("model3", time_index)

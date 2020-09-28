@@ -7,7 +7,7 @@ from matplotlib.widgets import Slider
 import coordTrans
 
 
-def findplotlim(scene, ego_x_y_th, egocar, scenesight, sidebuffer = 0.08 ,scaling=(1,0.75)):
+def findplotlim(scene, ego_x_y_th, egocar, scenesight, sidebuffer = 0.4 ,scaling=(1,0.75)):
     if scenesight:
         xmin = scene.x_min if egocar.x_init > scene.x_min else egocar.x_init
         xmax = scene.x_max if egocar.x_init < scene.x_max else egocar.x_init

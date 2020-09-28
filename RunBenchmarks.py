@@ -5,7 +5,7 @@ import os
 def sweepScenarios():
     T_SIM = "5"
     for i in range(19):
-        Scenario = "Scenario_B_SD"+str(2*i)
+        Scenario = "Scenario_B_SD"+str(2*i+2)
         sweepmodes(Scenario, T_SIM)
 
 def sweepmodes(Scenario, T_SIM):
@@ -17,5 +17,5 @@ def sweepmodes(Scenario, T_SIM):
 
 if __name__ == '__main__':
     #sweepScenarios()
-    sweepmodes(Scenario="Scenario_Benchmark", T_SIM="5")
+    sweepmodes(Scenario="Scenario_crossing", T_SIM="5")
 

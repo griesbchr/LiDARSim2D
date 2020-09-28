@@ -129,8 +129,8 @@ def getPointCloudDocDummy(ego_x_y_th,
 
 ############################################REALSENSOR############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), float64, float64, float64, float64) -> array(float64, 1d, A)]
-#@jit(float64[:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
 #@njit(cache=True)
+@jit(float64[:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
 def getPointCloudRealSensor_rt(ego_x_y_th,
                                scene_vertices, scene_line_vecs,
                                target_line_vecs, target_vertices, _d_max, _lidarmountx, _lidarmounty, alpha):
@@ -174,8 +174,8 @@ def getPointCloudRealSensor_rt(ego_x_y_th,
 
 ############################################MODEL0############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, float64) -> array(float64, 2d, C)]
-#@jit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
 #@njit(cache=True)
+@jit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
 def getPointCloudModel0_rt(ego_x_y_th,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs,
@@ -221,9 +221,10 @@ def getPointCloudModel0_rt(ego_x_y_th,
     return pointcloud
 
 ############################################MODEL1############################################################
-#[(array(float64, 1d, C), array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
-#@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
+#[(array(float64, 1d, C), array(float64, 3d, C), array(float64, 1d, C), array(float64, 3d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
+#@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 #@njit(cache=True)
+@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
                             scene_vertices, scene_line_vecs, target_vertices, target_line_vecs,
                             _n_rays, alpha_init,_fov,_alpha_inc,_lidarmountx, _lidarmounty, counterclockwise, _d_max):
@@ -277,11 +278,10 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
 
     return pointcloud
 
-
 ############################################MODEL2############################################################
 #[(array(float64, 1d, C), array(float64, 3d, C), array(float64, 1d, C), array(float64, 3d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
-#@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 #@njit(cache=True)
+#@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y_th_prev,
                             lowerleft, lowerright, upperleft, upperright,
                             scene_vertices, scene_line_vecs,
@@ -374,17 +374,15 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
             vertices = target_vertices[ray_nr]
             line_vecs = target_line_vecs[ray_nr]
         number_of_segments = line_vecs.shape[0]
-
-        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
+        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr], alpha_sin[ray_nr], lidar_xy[ray_nr][0],
+                                                lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
     pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
-
     return pointcloud
-
 
 ############################################MODEL3############################################################
 #[(array(float64, 1d, C), array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
-#@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 #@njit(cache=True)
+@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs, target_vertices_prev, target_line_vecs_prev,
