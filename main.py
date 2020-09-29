@@ -5,7 +5,7 @@ import sys
 import time
 
 import numpy as np
-
+print("Compiling...")
 import getPointcloud
 import scenarios
 from coordTrans import sensor2global
@@ -35,7 +35,7 @@ def main():
     #scenario_name = "Scenario_debug"
 
     # Additional parameters
-    T_SIM = 4  # only multiples of turning time
+    T_SIM = 2  # only multiples of turning time
 
     profiling = 0
     viewer = 1
@@ -178,7 +178,7 @@ def main():
     exec_time = ps.total_tt
     realtimefactor = (exec_time / T_SIM)
     print('Pointcloud Calc Time = {:.6f}'.format(exec_time), 's at realtimefactor of ', realtimefactor)
-    with open("Log.txt", "a") as text_file:
+    with open("./logs_and_benchmarks/Log.txt", "a") as text_file:
         print(f"{time.ctime()}; T_SIM=; {T_SIM}; PC Calctime=; {(exec_time)}; SimMode=;", simmode,
               "; Calcmode=; " + calcmode, f"; Realtimefactor=; {realtimefactor}; Scenario=;",scenario_name, file=text_file)
     print("shape PC = ", pointcloud.shape)

@@ -57,7 +57,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
 
         #Load UI from QTDesigner file
-        self.ui = uic.loadUi("sceneViewer.ui", self)
+        self.ui = uic.loadUi("./resources/sceneViewer.ui", self)
 
         #Initialize Plotwindow + toolbar
         height = 10 #inches

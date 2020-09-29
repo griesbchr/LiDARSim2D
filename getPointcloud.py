@@ -8,7 +8,6 @@ from numba import njit, jit
 from numba.types import  float64, int64, int32, boolean
 
 #Just needed when using the SceneViewer.py
-############################################REALSENSOR############################################################
 #@njit(float64[:,:,:](float64[:], int64, float64[:,:], float64[:,:], float64[:,:], int64, int64, float64, int64, float64, int64, float64[:,:], int64, int64, float64[:], float64[:], float64[:], float64[:]))
 def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_vecs, _n_rays, alpha_init, _alpha_inc, _d_max, _lidarmountx, _lidarmounty, target_x_y_th, fov, counterclockwise, _lowerleft, _lowerright, _upperleft, _upperright):
     pointcloud = np.zeros((_n_turns, _n_rays, 3))  # x, y, distance (nan if no hit)
@@ -130,7 +129,7 @@ def getPointCloudDocDummy(ego_x_y_th,
 ############################################REALSENSOR############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), float64, float64, float64, float64) -> array(float64, 1d, A)]
 #@njit(cache=True)
-@jit(float64[:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
+#@jit(float64[:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
 def getPointCloudRealSensor_rt(ego_x_y_th,
                                scene_vertices, scene_line_vecs,
                                target_line_vecs, target_vertices, _d_max, _lidarmountx, _lidarmounty, alpha):
@@ -175,7 +174,7 @@ def getPointCloudRealSensor_rt(ego_x_y_th,
 ############################################MODEL0############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, float64) -> array(float64, 2d, C)]
 #@njit(cache=True)
-@jit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
+#@jit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
 def getPointCloudModel0_rt(ego_x_y_th,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs,
@@ -224,7 +223,7 @@ def getPointCloudModel0_rt(ego_x_y_th,
 #[(array(float64, 1d, C), array(float64, 3d, C), array(float64, 1d, C), array(float64, 3d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
 #@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 #@njit(cache=True)
-@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
+#@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
                             scene_vertices, scene_line_vecs, target_vertices, target_line_vecs,
                             _n_rays, alpha_init,_fov,_alpha_inc,_lidarmountx, _lidarmounty, counterclockwise, _d_max):
@@ -234,7 +233,6 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
     the start and the end of the rotation (which is also the start of the next rotation).
     Because ego movement is taken into account, the model is very accurate for static targets and slow moving dynamic
     targets. The movements of dynamic targets are disregarded using this model.
-
     '''
 
     pointcloud = np.zeros((_n_rays, 3))  # x, y, distance (nan if no hit)
@@ -382,7 +380,7 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
 ############################################MODEL3############################################################
 #[(array(float64, 1d, C), array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
 #@njit(cache=True)
-@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
+#@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs, target_vertices_prev, target_line_vecs_prev,
