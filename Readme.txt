@@ -49,6 +49,9 @@ coordinate systems:
 	->vehicle coordinate system: Origin is at the center of the rear axis of a vehicle, ego_x_y_th/target_x_y_th describe translation and rotation of vehicle coordinate system vs the global coordinate system, used to describe car vertices and lidar mounting position (relative to the car). 
 	->sensor (or hit) coordinate system: origin is the position of the lidar, rotation is always 0 (that means no rotation relative to the global coordinate system), getRayIntersection() function returns hit coordinates in this coordinate system. 
 
+numba: 
+numba can be "deactivated" by commenting out the "@njit(....)" headers of the functions. 
+
 
 
 
