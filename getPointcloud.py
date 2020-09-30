@@ -7,8 +7,9 @@ from getRayIntersections import getRayIntersection as getRayIntersection
 from numba import njit, jit
 from numba.types import  float64, int64, int32, boolean
 
+
 #Just needed when using the SceneViewer.py
-@njit(float64[:,:,:](float64[:], int64, float64[:,:], float64[:,:], float64[:,:], int64, int64, float64, int64, float64, int64, float64[:,:], int64, int64, float64[:], float64[:], float64[:], float64[:]))
+#@njit(float64[:,:,:](float64[:], int64, float64[:,:], float64[:,:], float64[:,:], int64, int64, float64, int64, float64, int64, float64[:,:], int64, int64, float64[:], float64[:], float64[:], float64[:]))
 def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_vecs, _n_rays, alpha_init, _alpha_inc, _d_max, _lidarmountx, _lidarmounty, target_x_y_th, fov, counterclockwise, _lowerleft, _lowerright, _upperleft, _upperright):
     pointcloud = np.zeros((_n_turns, _n_rays, 3))  # x, y, distance (nan if no hit)
     if fov == 360:
@@ -60,6 +61,7 @@ def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_v
             counterclockwise = not(counterclockwise)
 
     return pointcloud
+
 
 def getPointCloudDocDummy(ego_x_y_th,
                             scene_vertices, scene_line_vecs, target_vertices, target_line_vecs,

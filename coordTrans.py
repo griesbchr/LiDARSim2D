@@ -173,7 +173,7 @@ def sensorpos2global(sensor_coordinates, _lidarmountx, _lidarmounty, egocar_x_y_
     sensor_coordinate: np.array of shape (#points,2) if #points = 1 then array has to be shape(1,3)!!!!! NOT (3,)
     _lidarmountx: float
     _lidatmounty: float
-    egocar_pos: np.array of shape (#points, 3), #points must be same as in sensor coords!
+    egocar_pos: np.array  shape (#points, 3), #points must be same as in sensor coords!
 
     NOTE: #if number of points of sensor_coordinates and ego_x_y_th are the same, then each sensor_coordinate has
             its own x_y_th. If #points of egocar_x_y_th is 1, then it is assumed that all of the sensor coordinates are
