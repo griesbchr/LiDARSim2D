@@ -7,7 +7,6 @@ import time
 import numpy as np
 #print("Compiling...")
 import getPointcloud
-#print("HERE")
 import scenarios
 from coordTrans import sensor2global
 from viewer import sceneViewer
