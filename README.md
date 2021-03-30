@@ -6,7 +6,12 @@ A simple 2D lidar simulator using raytracing to model lidar sensors with conside
  
 ## Description ##
 
-LiDARSim2D is a simple generic lidar simulator, written in Python. It uses radial raytracing to approximate a real lidars sensor output. The calculations are done with Special consideration of motion distortion. 
+LiDARSim2D is a simple generic lidar simulator, written in Python. It uses radial raytracing to approximate a real lidars sensor output. This purly geometric approach doesn't take any other environmental, material or stochastic effects into account. The calculations are done with special consideration of motion distortion. There are 5 calculation models available to approcimate the real lidar sensors output:
+1. RealSensor: Considers motion distortion effect directly by using the precise ego and target car positions for ray intersection calculaiton. This model produced the reference output and is rather computationally expensive.
+2. Model0: This model disreguards motion distortion.
+3. Model1: Used linear interpolation of the ego car position to approximate the RealSensor.
+4. Model2: Used linear interpolation of the ego and target car position to produce better approcximations of the RealSensor.
+5. Model3: Similar to Model2, but considers the motion distortion caused by the  target cars via target vertices interpolation im contrast to Model2 which interpolates just the position.
 
 LidarSim2D also inclused a GUI implemented in PyQt5 that visualizes the simulation results and set simulation Parameters. A framework to generate simple scenarios consisting of static and dynamic polygons is also included.  
 
