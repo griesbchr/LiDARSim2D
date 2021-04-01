@@ -108,8 +108,8 @@ class EgoCar(Car):
     def __init__(self):
         super().__init__()
         self.alpha_init = float(0)   #only positiv values!  #lidar angle starting value OR center of sector if fov != 360
-        self._fov = 360                                  #always starts scanning in middle of fov, center is selected by alpha_int
-        self._d_max = 50.0                                  # in m, has to be float -> add .0 to end
+        self._fov = 90                                  #always starts scanning in middle of fov, center is selected by alpha_int
+        self._d_max = 30.0                                  # in m, has to be float -> add .0 to end
         self._turning_freq = 20                    #Frequency for a FULL turn, even if fov != 360°
         self._alpha_inc_value = float(0.4)                  # in deg, 360/alpha_inc needs to be an int!! #default is 0.4deg
         self._counterclockwise = True                   #init value   #by default mathematical positive turning direction, is starting direction for fov != 360°

@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import inf
 
-from coordTrans import vehicle2global, sensor2global, vehicle2globalSingle, getTargetcarVertices, sensorpos2global
+from coordTrans import vehicle2global, vehicle2globalSingle, getTargetcarVertices, sensorpos2global, sensord2global
 from getRayIntersections import getRayIntersection as getRayIntersection
 
 from numba import njit, jit
@@ -55,7 +55,7 @@ def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_v
                                                                 lidar_xy[turn_nr*_n_rays+ray_nr][0], lidar_xy[turn_nr*_n_rays+ray_nr][1],
                                                                 _d_max, number_of_segments, vertices, line_vecs)
         #Transform hit coordinates (x_hit, y_hit and d) into global coordinates, done at last ray of turn
-        pointcloud[turn_nr][:, 0:2] = sensor2global(pointcloud[turn_nr][:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th[turn_nr * _n_rays + ray_nr, :3])
+        pointcloud[turn_nr][:, 0:2] = sensord2global(pointcloud[turn_nr][:, 2], _lidarmountx, _lidarmounty, ego_x_y_th[turn_nr * _n_rays + ray_nr, :3], alpha)
 
         if fov != 360:  #reverse direction for next turn
             counterclockwise = not(counterclockwise)
@@ -146,7 +146,7 @@ def getPointCloudRealSensor_rt(ego_x_y_th,
     pointcloud array.
     The wrapper function needs to keep track of the current lidar angle alpha to do so. To emulate the real sensor, the
     wrapper function also needs to shift the hitpoint coordinates according to the position of the ego vehicle at the
-    last position. This is done via the sensor2global function.
+    last position. This is done via the sensord2global (sensor distance to global) function.
 
     :param alpha: lidar scanning angle at position specified at ego_x_y_th in vehicle coordinate system.
     '''
@@ -190,7 +190,8 @@ def getPointCloudModel0_rt(ego_x_y_th,
 
     '''
     pointcloud = np.zeros((_n_rays, 3))  # x, y, distance
-    alpha = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
+    alpha_sensor = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
+    alpha = alpha_sensor + ego_x_y_th[2]
     alpha_cos = np.cos(np.deg2rad(alpha))
     alpha_sin = np.sin(np.deg2rad(alpha))
     lidar_xy = vehicle2globalSingle(np.array([_lidarmountx, _lidarmounty]), ego_x_y_th)
@@ -210,14 +211,14 @@ def getPointCloudModel0_rt(ego_x_y_th,
             pointcloud[:,0] = _d_max*alpha_cos
             pointcloud[:,1] = _d_max*alpha_sin
             pointcloud[:,2] = inf
-            pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+            pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
             return pointcloud
 
     number_of_segments = line_vecs.shape[0]
     for ray_nr in range(_n_rays):
         pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[0], lidar_xy[1], _d_max, number_of_segments, vertices, line_vecs)
 
-    pointcloud[:,0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+    pointcloud[:,0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
 
     return pointcloud
 
@@ -245,10 +246,10 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
     ego_x_y_th_inter[:,2] = np.linspace(ego_x_y_th_prev[2], ego_x_y_th[2], _n_rays)
     lidar_xy = vehicle2global(np.array([_lidarmountx, _lidarmounty]), ego_x_y_th_inter) #model 1 -> lidar_xy is f(ray_nr)
     if counterclockwise:
-        alpha = np.arange(alpha_init, alpha_init + _fov, abs(_alpha_inc))
+        alpha_sensor = np.arange(alpha_init, alpha_init + _fov, abs(_alpha_inc))
     else:
-        alpha = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
-    alpha += ego_x_y_th_inter[:,2 ]
+        alpha_sensor = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
+    alpha = alpha_sensor + ego_x_y_th_inter[:,2 ]
     alpha_rad = np.deg2rad(alpha)
     alpha_cos = np.cos(alpha_rad)
     alpha_sin = np.sin(alpha_rad)
@@ -268,13 +269,13 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
             pointcloud[:, 0] = _d_max * alpha_cos
             pointcloud[:, 1] = _d_max * alpha_sin
             pointcloud[:, 2] = inf
-            pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+            pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
             return pointcloud
 
     number_of_segments = line_vecs.shape[0]
     for ray_nr in range(_n_rays):
         pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)  #model2 lidar_xy and vertices+linevecs are f(ray_nr)
-    pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+    pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
 
     return pointcloud
 
@@ -320,10 +321,10 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
     ##vertices = np.repeat(np.expand_dims(scene_vertices, axis=0), _n_rays, axis=0)
     ##line_vecs = np.repeat(np.expand_dims(scene_line_vecs, axis=0), _n_rays, axis=0)
     if counterclockwise:
-        alpha = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
+        alpha_sensor = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
     else:
-        alpha = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
-    alpha += ego_x_y_th_inter[:,2]
+        alpha_sensor = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
+    alpha = alpha_sensor + ego_x_y_th_inter[:,2]
     alpha_rad = np.deg2rad(alpha)
     alpha_cos = np.cos(alpha_rad)
     alpha_sin = np.sin(alpha_rad)
@@ -357,7 +358,7 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
             pointcloud[:, 0] = _d_max * alpha_cos
             pointcloud[:, 1] = _d_max * alpha_sin
             pointcloud[:, 2] = inf
-            pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+            pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
             return pointcloud
 
         #vertices = np.concatenate((vertices, target_vertices), axis=1)
@@ -376,7 +377,7 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
         number_of_segments = line_vecs.shape[0]
         pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr], alpha_sin[ray_nr], lidar_xy[ray_nr][0],
                                                 lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
-    pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+    pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
     return pointcloud
 
 ############################################MODEL3############################################################
@@ -405,20 +406,21 @@ def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
         target_vertices_inter = np.zeros((_n_rays, carlinenumber, 2))
         target_linevecs_inter = np.zeros((_n_rays, carlinenumber, 2))
 
-    #Calculaion of angle alpha
-    if counterclockwise:
-        alpha = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
-    else:
-        alpha = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
-    alpha += ego_x_y_th_inter[:,2 ]
-    alpha_rad = np.deg2rad(alpha)
-    alpha_cos = np.cos(alpha_rad)
-    alpha_sin = np.sin(alpha_rad)
 
     #Interpolation ego position
     ego_x_y_th_inter[:,0] = np.linspace(ego_x_y_th_prev[0], ego_x_y_th[0], _n_rays)
     ego_x_y_th_inter[:,1] = np.linspace(ego_x_y_th_prev[1], ego_x_y_th[1], _n_rays)
     ego_x_y_th_inter[:,2] = np.linspace(ego_x_y_th_prev[2], ego_x_y_th[2], _n_rays)
+
+    #Calculaion of angle alpha
+    if counterclockwise:
+        alpha_sensor = np.arange(alpha_init, alpha_init+_fov, abs(_alpha_inc))
+    else:
+        alpha_sensor = np.arange(alpha_init, alpha_init-_fov, -abs(_alpha_inc))
+    alpha = alpha_sensor + ego_x_y_th_inter[:,2 ]
+    alpha_rad = np.deg2rad(alpha)
+    alpha_cos = np.cos(alpha_rad)
+    alpha_sin = np.sin(alpha_rad)
 
     lidar_xy = vehicle2global(np.array([_lidarmountx, _lidarmounty]), ego_x_y_th_inter)
 
@@ -446,20 +448,20 @@ def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
             pointcloud[:, 0] = _d_max * alpha_cos
             pointcloud[:, 1] = _d_max * alpha_sin
             pointcloud[:, 2] = inf
-            pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+            pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
             return pointcloud
 
     for ray_nr in range(_n_rays):
         if target_vertices is not None and scene_vertices is not None:
             vertices = np.concatenate((scene_vertices, target_vertices_inter[ray_nr]), axis=0)
             line_vecs = np.concatenate((scene_line_vecs, target_linevecs_inter[ray_nr]), axis=0)
-        elif target_vertices is not None:
+        else:
             vertices = target_vertices_inter[ray_nr]
             line_vecs = target_linevecs_inter[ray_nr]
 
         number_of_segments = line_vecs.shape[0]
         pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
-    pointcloud[:, 0:2] = sensor2global(pointcloud[:, 0:2], _lidarmountx, _lidarmounty, ego_x_y_th)
+    pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
     return pointcloud
 
 

@@ -60,8 +60,46 @@ def vehicle2globalSingle(vehicle_coordinates, egocar_x_y_th):
 
     return global_coordinates
 
+# array(float64, 1d, A), float64, float64, array(float64, 1d, C), array(float64, 1d, C)
+@njit(float64[:,:](float64[:],float64, float64,float64[:], float64[:]))
+def sensord2global(hit_distance, _lidarmountx, _lidarmounty, egocar_x_y_th, alpha_list):
+    '''
+    Transforms array of hit distances from sensor to object to global coordinate system given
+    the lidar scanning angles and one lidar mounting position (incl ego position).
 
-@njit(float64[:,:](float64[:,:],float64,int64,float64[:]))
+    :param hit_distance: Array of distances in sensor coordinate system. shape=(#rays), dtype=float
+    :param _lidarmountx: x coordinate of mounting position of lidar. scalar, dtype=float
+    :param _lidarmounty: y coordinate of mounting position of lidar. scalar, dtype=float
+    :param egocar_x_y_th: Array of egocar position. shape=(3,) (where 3 are x,y,theta), dtype=float
+    :param alpha: numpy array of lidar scanning angles in sensor coordniate system (so always starting with 0), dtype=float
+    :return:
+        global_coordinates: Array of global coordinates. shape=(#coordinates,2) (where 2 are x and y), dtype=float
+    '''
+
+    global_coordinates = np.zeros((len(hit_distance), 2), dtype=np.float64)
+    angle_rad = np.deg2rad(egocar_x_y_th[2])
+    m_trans = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],
+                        [np.sin(angle_rad), np.cos(angle_rad)]])
+
+    lidarmount_vehicle = np.empty((2))
+    lidarmount_vehicle[0] = _lidarmountx
+    lidarmount_vehicle[1] = _lidarmounty
+    lidarmount_global = m_trans @ lidarmount_vehicle +  egocar_x_y_th[:2]
+
+
+    alphas = np.deg2rad(alpha_list)
+
+    sensor_coords = np.empty_like((global_coordinates))
+    sensor_coords[:,0] = hit_distance * np.cos(alphas)# - hit_distance * np.sin(alphas)
+    sensor_coords[:,1] = hit_distance * np.sin(alphas)# + hit_distance * np.cos(alphas)
+
+    for i in range(len(hit_distance)):    #for each sensor point, eg. each lidar rotation
+        global_coordinates[i] =  lidarmount_global + m_trans @ sensor_coords[i]
+        #global_coordinates[i] =  lidarmount_global + sensor_coords[i]
+
+    return global_coordinates
+
+@njit(float64[:,:](float64[:,:],float64, float64,float64[:]))
 def sensor2global(hit_coordinates, _lidarmountx, _lidarmounty, egocar_x_y_th):
     '''
     Transforms array of coordinates from sensor coordinate system to global coordinate system given

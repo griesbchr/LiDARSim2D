@@ -6,6 +6,7 @@ from data import Scene
 
 def getScenarioNames():
     return ["Scenario_crossing", "Scenario_overtake", "Scenario1", "Scenario_only_ego", "Scenario_not_implemented", "Scenario_debug", "Scenario_TargetLaneTurnIn",
+            "Scenario_curve_wall",
             "Scenario_B_S0",
             "Scenario_B_S1",
             "Scenario_B_S2",
@@ -119,7 +120,8 @@ def getScenario_overtake(TSIM, realsensor):
 
     return scenario
 
-def getScenario1(TSIM, realsensor):
+
+def getScenario_curve_wall(TSIM, realsensor):
     '''
     A scenario contains stationary and moving objects.
         Stationary objects are defined with the Scene class which contains instances of the StaticTarget class.
@@ -132,43 +134,47 @@ def getScenario1(TSIM, realsensor):
     '''
 
     #select Scene, scenes can be created settung up a getStaticScene function below
-    scene = getStaticScene2()
+    scene = getStaticSceneWall()
 
     #electing one ego car and various target cars
     egocar = data.EgoCar()
-    egocar.init((-egocar._L + egocar._foh,-1.5,0), 35)    #((x_init, y_init, theta_init), velocity_init)
+    egocar.init((-egocar._L + egocar._foh,-1.5,15), 35)    #((x_init, y_init, theta_init), velocity_init)
 
 
     targetcar1 = data.TargetCar()   #Adds car to target to TargetCar.targetlist -> Class variable!!
     targetcar1.init((-8,-1.5,0),20) #((x_init, y_init, theta_init), velocity_init)
-    targetcar2 = data.TargetCar()
-    targetcar2.init((10,-1.5,0),15)
-    targetcar3 = data.TargetCar()
-    targetcar3.init((25,1.5,-180),15)
 
-    #Initializing w-vector that defines movement of egocar
+
+    #Initializing w-vector that defines movement of cars
     w_value = 60
+    w_value2 = 76.5
     if realsensor:
         idxperturn = egocar._n_rays      #calculating time indices for 1 turn
     else:
         idxperturn = 1
 
     w_curve = np.full(3*idxperturn, w_value)         #curve left, -w_curve is curve right
+    w_curve2 = np.full(3*idxperturn, w_value2)         #curve left, -w_curve is curve right
     w_0 = np.full(3*idxperturn, 0)                  #no curve
 
-    w_lane_change_right = np.stack((-w_curve, w_curve,  w_curve, -w_curve),axis=0).flatten()
+    w_lane_change_right = np.stack((-w_curve, -w_curve,  -w_curve, -w_curve),axis=0).flatten()
     w_lange_change_left = -w_lane_change_right
 
-    w_ego = np.stack((w_lane_change_right,w_lange_change_left),axis=0).flatten()
+    w_ego = np.stack((w_lange_change_left),axis=0).flatten()
+
+    w_leftturn = np.stack((w_0, w_0, w_curve2, w_curve2, w_0, w_0, w_0, -w_curve2, -w_curve2))
 
     #Initialize Target cars w vectors in w_target_list, can be changed the same way as w_ego
     if len(data.TargetCar.targetlist) > 0:
         w_target_list = [None for i in range(len(data.TargetCar.targetlist))] #Initing as None means targets drive straight
 
 
+    else:
+        w_target_list = None
     scenario = data.Scenario(TSIM, realsensor, scene, egocar, w_ego, data.TargetCar.targetlist, w_target_list)
 
     return scenario
+
 
 def getScenario_only_ego(TSIM, realsensor):
     scene = getStaticScene2()
@@ -854,6 +860,23 @@ def getStaticScene3():
     obj8 = StaticTarget([(-10, -5), (-10, 5), (-16, 5), (-16, -5)])  # Rectangle
 
     return Scene([obj8])
+
+
+def getStaticSceneWall():
+    '''Function so set instance of Scene Class
+        Output: Instance of Scene Class '''
+
+    # Initialize Testing Objects
+    obj1 = StaticTarget([(10, -5), (10, 5), (16, 5), (16, -5)])  # Rectangle
+    obj2 = StaticTarget([(20, -20), (20, 20), (22, 20), (22, -20)])  # Wall
+    obj3 = StaticTarget([(20, -5), (20, 5), (26, 4), (26, -4)])  # Trapezoid middle moved to right
+    obj4 = StaticTarget([(0, -10), (10, -3), (5, -5)])  # Lower Triangle
+    obj5 = StaticTarget([(10, -5), (10, 5), (16, 4), (16, -4)])  # Trapezoid middle
+    obj6 = StaticTarget([(0, 10), (10, 3), (5, 5)])  # upper Triangle
+    obj7 = StaticTarget([(0, 10), (10, 3), (5, 5)])  # upper Triangle
+    obj8 = StaticTarget([(-10, -5), (-10, 5), (-16, 5), (-16, -5)])  # Rectangle
+
+    return Scene([obj2])
 
 def getStaticScene4():
     '''Function so set instance of Scene Class

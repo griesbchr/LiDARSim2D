@@ -23,18 +23,11 @@ import data
 import coordTrans
 import scenarios
 from getPointcloud import getPointCloudRealSensor as getPointCloudRealSensor
-#from getPointcloud import getPointCloudModel0_rt_scenario as getPointCloudModel0
-#from getPointcloud import getPointCloudModel1_rt_scenario as getPointCloudModel1
-#from getPointcloud import getPointCloudModel2_rt_scenario as getPointCloudModel2
-#from getPointcloud import getPointCloudModel3_rt_scenario as getPointCloudModel3
 
-#from getPointcloud import getPointCloudRealSensor_rt as getPointCloudRealSensor_rt
 from getPointcloud import getPointCloudModel0_rt as getPointCloudModel0_rt
 from getPointcloud import getPointCloudModel1_rt as getPointCloudModel1_rt
 from getPointcloud import getPointCloudModel2_rt as getPointCloudModel2_rt
 from getPointcloud import getPointCloudModel3_rt as getPointCloudModel3_rt
-
-#from getPointcloud import getPointCloudModel1_rt_scenario_numba as getPointCloudModel1_numba
 
 #print("Importing precompiled functions...")
 #import numba_cc

@@ -9,6 +9,7 @@ import numpy as np
 import getPointcloud
 import scenarios
 from coordTrans import sensor2global
+from coordTrans import sensord2global
 from viewer import sceneViewer
 #print("finnished importing")
 
@@ -20,8 +21,8 @@ def main():
     # Model: choose only one, commandline mode selection will override script mode selection!!
     en_real_sensor = 0  # one timestep for each lidar ray -> motion distortion included
     en_model0 = 0  # one timestep for each lidar rotation -> no motion distortion
-    en_model1 = 0  # one timestep per rotation -> motion distortin via interpolation of ego vehicle
-    en_model2 = 1  # one timestep per rotation -> motion distortin via interpolation of ego and target vehicle
+    en_model1 = 1  # one timestep per rotation -> motion distortin via interpolation of ego vehicle
+    en_model2 = 0  # one timestep per rotation -> motion distortin via interpolation of ego and target vehicle
     en_model3 = 0  # one timestep per rotation -> motion distortion via interpolation of ego vehicle and target vertices
 
     # Calculation Mode: choose one
@@ -29,14 +30,14 @@ def main():
     rt = 1
 
     # Select Scenario
-    scenario_name = "Scenario_crossing"
+    scenario_name = "Scenario_overtake1"
     # scenario_name = "Scenario_only_ego"
     #scenario_name = "Scenario_Benchmark"
     #scenario_name = "Scenario_TargetLaneTurnIn"
     #scenario_name = "Scenario_debug"
 
     # Additional parameters
-    T_SIM = 2  # only multiples of turning time
+    T_SIM = 4  # only multiples of turning time
 
     profiling = 0
     viewer = 1
@@ -96,6 +97,7 @@ def main():
     PC = []
     if simmode == "realsensor":
         pointlist = []
+        alphalist = []
 
     for time_index in np.arange(len(scenario.t)):
         if en_real_sensor:
@@ -104,6 +106,7 @@ def main():
                 calcmode = "realtime"
                 args = scenario.getPCargs("realsensor", time_index)
                 PC_update = args[-1]
+                alphalist.append(args[-2])
                 pr.enable()  # for profilin
                 point = getPointcloud.getPointCloudRealSensor_rt(*args[0:-1])  # leaves out last element
 
@@ -116,8 +119,10 @@ def main():
                     ego_x_y_th = args[0]
                     pr.enable()  # for profiling
                     pointcloud = np.stack(pointlist)
-                    pointcloud[:, 0:2] = sensor2global(np.stack(pointlist)[:, 0:2], _lidarmountx, _lidarmounty,
-                                                       ego_x_y_th)
+                    pointcloud[:, 0:2] = sensord2global(np.stack(pointlist)[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, scenario.egocar._alpha_inc, np.stack(alphalist))
+                    #pointcloud[:, 0:2] = sensor2global(np.stack(pointlist)[:, 0:2], _lidarmountx, _lidarmounty,
+                    #                                   ego_x_y_th)
+                    alphalist.clear()
                     pointlist.clear()
                     pr.disable()  # for profiling
 

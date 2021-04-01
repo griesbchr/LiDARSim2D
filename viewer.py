@@ -184,9 +184,9 @@ def sceneViewer(ego_x_y_th, target_x_y_th_list, pointcloud, drawmode, scene, ego
             currenthitmarker._offsets = [[hit_x, hit_y]]
             currenthitmarker._visible = False if np.isinf(PC_iter_d[sliderval]) else True
 
-            print("t = ",val*T_STEP)
-            if drawmode == 'realsensor':
-                print("turn = ", val//egocar._n_rays)
+            #print("t = ",val*T_STEP)
+            #if drawmode == 'realsensor':
+            #    print("turn = ", val//egocar._n_rays)
 
     slider.on_changed(update_val)
     plt.show()

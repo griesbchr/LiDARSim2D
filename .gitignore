@@ -12,3 +12,4 @@ compile.py
 ~$Benchmarks.xlsx
 docs/
 index.rst
+venv/
