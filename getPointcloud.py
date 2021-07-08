@@ -1,11 +1,13 @@
 import numpy as np
 from numpy import inf
 
-from coordTrans import vehicle2global, vehicle2globalSingle, getTargetcarVertices, sensorpos2global, sensord2global
+from coordTrans import vehicle2global, vehicle2globalSingle, getTargetcarVertices, sensorpos2global, sensord2global#, getTargetcarVertices_numba
 from getRayIntersections import getRayIntersection as getRayIntersection
 
 from numba import njit, jit
-from numba.types import  float64, int64, int32, boolean
+from numba.types import float64, int64, int32, boolean
+
+import cProfile
 
 
 #Just needed when using the SceneViewer.py
@@ -64,7 +66,7 @@ def getPointCloudRealSensor(t,_n_turns, ego_x_y_th, scene_vertices, scene_line_v
 
 
 def getPointCloudDocDummy(ego_x_y_th,
-                            scene_vertices, scene_line_vecs, target_vertices, target_line_vecs,
+                            scene_vertices, s, target_vertices, target_line_vecs,
                             _n_rays, alpha_init,_fov,_alpha_inc,_lidarmountx, _lidarmounty, counterclockwise, _d_max):
     '''
     Function that only exists to doc the parameters of all getPointCloud functions.
@@ -94,7 +96,7 @@ def getPointCloudDocDummy(ego_x_y_th,
 
 
     Realsensor:
-    :param alpha: lidar scanning angle at position specified at ego_x_y_th in vehocle coordinate system.
+    :param alpha: lidar scanning angle at position specified at ego_x_y_th in vehicle coordinate system.
 
     Model1:
     :param ego_x_y_th_prev: array with ego car position data for previous timestep in the global coordinate system.
@@ -131,10 +133,11 @@ def getPointCloudDocDummy(ego_x_y_th,
 ############################################REALSENSOR############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), float64, float64, float64, float64) -> array(float64, 1d, A)]
 #@njit(cache=True)
-@jit(float64[:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
+@njit(float64(float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], float64, float64, float64,float64))
 def getPointCloudRealSensor_rt(ego_x_y_th,
                                scene_vertices, scene_line_vecs,
-                               target_line_vecs, target_vertices, _d_max, _lidarmountx, _lidarmounty, alpha):
+                               target_line_vecs, target_vertices,
+                               _d_max, _lidarmountx, _lidarmounty, alpha):
     '''
 
     Returns the hitpoint coordinates in sensor coordinate system. In contrast to the other functions, this function
@@ -167,16 +170,16 @@ def getPointCloudRealSensor_rt(ego_x_y_th,
             vertices = target_vertices[0]
             line_vecs = target_line_vecs[0]
         else: #no target
-            return np.array([_d_max*alpha_cos, _d_max*alpha_sin, inf])
+            return inf
 
     number_of_segments = line_vecs.shape[0]
-    point = getRayIntersection(alpha_cos, alpha_sin, lidar_xy[0], lidar_xy[1], _d_max, number_of_segments, vertices, line_vecs)
-    return point
+    dist = getRayIntersection(alpha_cos, alpha_sin, lidar_xy[0], lidar_xy[1], _d_max, number_of_segments, vertices, line_vecs)
+    return dist
 
 ############################################MODEL0############################################################
 #[(array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, float64) -> array(float64, 2d, C)]
 #@njit(cache=True)
-@jit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
+@njit(float64[:,:](float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],  int64, float64, int64, float64, float64, float64, float64))
 def getPointCloudModel0_rt(ego_x_y_th,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs,
@@ -216,7 +219,7 @@ def getPointCloudModel0_rt(ego_x_y_th,
 
     number_of_segments = line_vecs.shape[0]
     for ray_nr in range(_n_rays):
-        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[0], lidar_xy[1], _d_max, number_of_segments, vertices, line_vecs)
+        pointcloud[ray_nr,2] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[0], lidar_xy[1], _d_max, number_of_segments, vertices, line_vecs)
 
     pointcloud[:,0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
 
@@ -226,7 +229,7 @@ def getPointCloudModel0_rt(ego_x_y_th,
 #[(array(float64, 1d, C), array(float64, 3d, C), array(float64, 1d, C), array(float64, 3d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
 #@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 #@njit(cache=True)
-@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
+@njit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
                             scene_vertices, scene_line_vecs, target_vertices, target_line_vecs,
                             _n_rays, alpha_init,_fov,_alpha_inc,_lidarmountx, _lidarmounty, counterclockwise, _d_max):
@@ -274,7 +277,7 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
 
     number_of_segments = line_vecs.shape[0]
     for ray_nr in range(_n_rays):
-        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)  #model2 lidar_xy and vertices+linevecs are f(ray_nr)
+        pointcloud[ray_nr,2] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)  #model2 lidar_xy and vertices+linevecs are f(ray_nr)
     pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
 
     return pointcloud
@@ -282,7 +285,7 @@ def getPointCloudModel1_rt(ego_x_y_th, ego_x_y_th_prev,
 ############################################MODEL2############################################################
 #[(array(float64, 1d, C), array(float64, 3d, C), array(float64, 1d, C), array(float64, 3d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 2d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
 #@njit(cache=True)
-@jit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
+@njit(float64[:,:](float64[:],float64[:,:,:], float64[:],float64[:,:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:], int64, float64, int64, float64, float64, float64, boolean, float64))
 def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y_th_prev,
                             lowerleft, lowerright, upperleft, upperright,
                             scene_vertices, scene_line_vecs,
@@ -375,7 +378,7 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
             vertices = target_vertices[ray_nr]
             line_vecs = target_line_vecs[ray_nr]
         number_of_segments = line_vecs.shape[0]
-        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr], alpha_sin[ray_nr], lidar_xy[ray_nr][0],
+        pointcloud[ray_nr,2] = getRayIntersection(alpha_cos[ray_nr], alpha_sin[ray_nr], lidar_xy[ray_nr][0],
                                                 lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
     pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
     return pointcloud
@@ -383,7 +386,7 @@ def getPointCloudModel2_rt(ego_x_y_th,target_x_y_th, ego_x_y_th_prev, target_x_y
 ############################################MODEL3############################################################
 #[(array(float64, 1d, C), array(float64, 1d, C), array(float64, 2d, C), array(float64, 2d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), array(float64, 3d, C), int64, float64, int64, float64, float64, float64, bool, float64) -> array(float64, 2d, C)]
 #@njit(cache=True)
-@jit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
+@njit(float64[:,:](float64[:], float64[:],float64[:,:],float64[:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:],float64[:,:,:], int32,float64, int32,float64, float64,float64,boolean, float64))
 def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
                            scene_vertices, scene_line_vecs,
                            target_vertices,target_line_vecs, target_vertices_prev, target_line_vecs_prev,
@@ -405,7 +408,6 @@ def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
         _,carlinenumber,_ = target_vertices.shape
         target_vertices_inter = np.zeros((_n_rays, carlinenumber, 2))
         target_linevecs_inter = np.zeros((_n_rays, carlinenumber, 2))
-
 
     #Interpolation ego position
     ego_x_y_th_inter[:,0] = np.linspace(ego_x_y_th_prev[0], ego_x_y_th[0], _n_rays)
@@ -460,7 +462,7 @@ def getPointCloudModel3_rt(ego_x_y_th, ego_x_y_th_prev,
             line_vecs = target_linevecs_inter[ray_nr]
 
         number_of_segments = line_vecs.shape[0]
-        pointcloud[ray_nr] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
+        pointcloud[ray_nr,2] = getRayIntersection(alpha_cos[ray_nr],alpha_sin[ray_nr], lidar_xy[ray_nr][0], lidar_xy[ray_nr][1], _d_max, number_of_segments, vertices, line_vecs)
     pointcloud[:, 0:2] = sensord2global(pointcloud[:, 2], _lidarmountx, _lidarmounty, ego_x_y_th, alpha_sensor)
     return pointcloud
 

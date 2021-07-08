@@ -2,8 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from numba import njit
-from numba.types import  float64, int64, int32, UniTuple
-
+from numba.types import float64, int64, int32, UniTuple
 
 
 @njit(float64[:,:](float64[:],float64[:,:]))
@@ -34,6 +33,7 @@ def vehicle2global(vehicle_coordinates, egocar_x_y_th):
 
     return global_coordinates
 
+
 @njit(float64[:](float64[:],float64[:]))
 def vehicle2globalSingle(vehicle_coordinates, egocar_x_y_th):
     '''
@@ -56,7 +56,7 @@ def vehicle2globalSingle(vehicle_coordinates, egocar_x_y_th):
     angle_rad = np.deg2rad(egocar_x_y_th[2])
     m_trans[:,:] = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],    #has shape (2,2,#points) one transformation matrix for each point
                                [np.sin(angle_rad), np.cos(angle_rad)]])
-    global_coordinates =  egocar_x_y_th[0:2] +  np.ascontiguousarray(m_trans[:,:]) @ vehicle_coordinates
+    global_coordinates =  egocar_x_y_th[0:2] +  np.ascontiguousarray(m_trans[:,:]) @ np.ascontiguousarray(vehicle_coordinates)
 
     return global_coordinates
 
@@ -90,8 +90,8 @@ def sensord2global(hit_distance, _lidarmountx, _lidarmounty, egocar_x_y_th, alph
     alphas = np.deg2rad(alpha_list)
 
     sensor_coords = np.empty_like((global_coordinates))
-    sensor_coords[:,0] = hit_distance * np.cos(alphas)# - hit_distance * np.sin(alphas)
-    sensor_coords[:,1] = hit_distance * np.sin(alphas)# + hit_distance * np.cos(alphas)
+    sensor_coords[:,0] = hit_distance * np.cos(alphas)
+    sensor_coords[:,1] = hit_distance * np.sin(alphas)
 
     for i in range(len(hit_distance)):    #for each sensor point, eg. each lidar rotation
         global_coordinates[i] =  lidarmount_global + m_trans @ sensor_coords[i]
@@ -127,6 +127,7 @@ def sensor2global(hit_coordinates, _lidarmountx, _lidarmounty, egocar_x_y_th):
 
     return global_coordinates
 
+#(array(float64, 2d, A), array(float64, 2d, A), array(float64, 2d, A), array(float64, 2d, A), array(float64, 3d, A))
 @njit(UniTuple(float64[:,:,:],2)(float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:,:]))
 def getTargetcarVertices(lowerleft, lowerright, upperleft, upperright, target_x_y_th):
     '''
@@ -145,19 +146,23 @@ def getTargetcarVertices(lowerleft, lowerright, upperleft, upperright, target_x_
     NOTE: line vectors are calculated by simply subtracting the vertices from each other.
     '''
 
-    targetnumber,timesteps,_ = target_x_y_th.shape
+    targetnumber, timesteps, _ = target_x_y_th.shape
 
-    vertices = np.zeros((timesteps,targetnumber*4,2))  #,dtype=float
-    line_vecs = np.zeros((timesteps,targetnumber*4,2)) #,dtype=float
+    vertices = np.zeros((timesteps, targetnumber*4, 2))  #,dtype=float
+    line_vecs = np.zeros((timesteps, targetnumber*4, 2)) #,dtype=float
 
     for targetindex in range(targetnumber):
-        angle_rad = np.deg2rad(target_x_y_th[targetindex,:,2])
+        angle_rad = np.deg2rad(target_x_y_th[targetindex, :, 2])
         for i in range(timesteps):
             m_trans = np.array([[np.cos(angle_rad[i]), -np.sin(angle_rad[i])],
                                 [np.sin(angle_rad[i]), np.cos(angle_rad[i])]])
+            #shift_ll = m_trans @ np.ascontiguousarray(lowerleft[targetindex])
             shift_ll = m_trans @ lowerleft[targetindex]
+            #shift_lr = m_trans @ np.ascontiguousarray(lowerright[targetindex])
             shift_lr = m_trans @ lowerright[targetindex]
+            #shift_ul = m_trans @ np.ascontiguousarray(upperleft[targetindex])
             shift_ul = m_trans @ upperleft[targetindex]
+            #shift_ur = m_trans @ np.ascontiguousarray(upperright[targetindex])
             shift_ur = m_trans @ upperright[targetindex]
             vertices[i][targetindex*4+0]= target_x_y_th[targetindex][i][0:2]+shift_ll
             vertices[i][targetindex*4+1]= target_x_y_th[targetindex][i][0:2]+shift_lr
@@ -167,6 +172,47 @@ def getTargetcarVertices(lowerleft, lowerright, upperleft, upperright, target_x_
             line_vecs[i][targetindex*4+1] = vertices[i][targetindex*4+2]-vertices[i][targetindex*4+1]
             line_vecs[i][targetindex*4+2] = vertices[i][targetindex*4+3]-vertices[i][targetindex*4+2]
             line_vecs[i][targetindex*4+3] = vertices[i][targetindex*4+0]-vertices[i][targetindex*4+3]
+
+    return vertices, line_vecs
+
+
+#(array(float64, 2d, A), array(float64, 2d, A), array(float64, 2d, A), array(float64, 2d, A), array(float64, 3d, A))
+#@njit(UniTuple(float64[:,:,:],2)(float64[:,:],float64[:,:],float64[:,:],float64[:,:],float64[:,:,:]))
+def getTargetcarVertices_nonumba(lowerleft, lowerright, upperleft, upperright, target_x_y_th):
+    '''
+    Transforms targets vertices from vehicle coordinate system to global coordinate system given the position of the
+    target (x,y,theta in rad) in the global coordinate system for an arbitrary number of timesteps.
+    :param lowerleft: Coordinates of lower left point in targets coordinate system. shape=(2,#targets), dtype=float
+    :param lowerright: Coordinates of lower left point in targets coordinate system. shape=(2,#targets), dtype=float
+    :param upperleft: Coordinates of lower left point in targets coordinate system. shape=(2,#targets), dtype=float
+    :param upperright: Coordinates of lower left point in targets coordinate system. shape=(2,#targets), dtype=float
+    :param target_x_y_th: Coordinates and angle of target. shape=(#targets, #timesteps, 3), dtype=float
+    NOTE: if only one timestep then shape of target_x_y_th has to be (#targets,1, 3) and not just
+          (#targets, 3)
+    :return: Tuple(vertices, line_vecs)
+        vertices: coordinates of targets vertices in global coordinate system. shape(#timesteps, 4*#Targets, 2), dtype=float
+        line_vecs: line vectors for all lines of the target. shape(#timesteps, 4*#Targets, 2), dtype=float
+    NOTE: line vectors are calculated by simply subtracting the vertices from each other.
+    '''
+
+    targetnumber, timesteps, _ = target_x_y_th.shape
+
+    vertices = np.zeros((timesteps, targetnumber*4, 2))  #,dtype=float
+    line_vecs = np.zeros((timesteps, targetnumber*4, 2)) #,dtype=float
+
+    for targetindex in range(targetnumber):
+        angle_rad = np.deg2rad(target_x_y_th[targetindex, :, 2])
+        m_trans = np.array([[np.cos(angle_rad), -np.sin(angle_rad)],
+                        [np.sin(angle_rad), np.cos(angle_rad)]])
+        m_trans = np.reshape(m_trans, (2, timesteps*2)).transpose()
+        vertices[:,targetindex*4+0]= target_x_y_th[targetindex][:,0:2]+(m_trans @ lowerleft[targetindex]).reshape(timesteps,2)
+        vertices[:,targetindex*4+1]= target_x_y_th[targetindex][:,0:2]+(m_trans @ lowerright[targetindex]).reshape(timesteps,2)
+        vertices[:,targetindex*4+2]= target_x_y_th[targetindex][:,0:2]+(m_trans @ upperleft[targetindex]).reshape(timesteps,2)
+        vertices[:,targetindex*4+3]= target_x_y_th[targetindex][:,0:2]+(m_trans @ upperright[targetindex]).reshape(timesteps,2)
+        line_vecs[:,targetindex*4+0] = vertices[:,targetindex*4+1]-vertices[:,targetindex*4+0]
+        line_vecs[:,targetindex*4+1] = vertices[:,targetindex*4+2]-vertices[:,targetindex*4+1]
+        line_vecs[:,targetindex*4+2] = vertices[:,targetindex*4+3]-vertices[:,targetindex*4+2]
+        line_vecs[:,targetindex*4+3] = vertices[:,targetindex*4+0]-vertices[:,targetindex*4+3]
 
     return vertices, line_vecs
 

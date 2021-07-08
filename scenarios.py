@@ -70,28 +70,28 @@ def getScenario_overtake(TSIM, realsensor):
 
     #electing one ego car and various target cars
     egocar = data.EgoCar()
-    egocar.init((-egocar._L + egocar._foh,-1.5,0), 35)    #((x_init, y_init, theta_init), velocity_init)
+    egocar.init((-egocar._L + egocar._foh,-1.5,0), 23)    #((x_init, y_init, theta_init), velocity_init)
 
 
     targetcar1 = data.TargetCar()   #Adds car to target to TargetCar.targetlist -> Class variable!!
-    targetcar1.init((-8,-1.5,0),20) #((x_init, y_init, theta_init), velocity_init)
+    targetcar1.init((-8,-1.5,0),10) #((x_init, y_init, theta_init), velocity_init)
     targetcar2 = data.TargetCar()
-    targetcar2.init((10,-1.5,0),15)
+    targetcar2.init((8,-1.5,0),13)
     targetcar3 = data.TargetCar()
     targetcar3.init((25,1.5,-180),15)
     targetcar4 = data.TargetCar()
     targetcar4.init((37.5,-13,90),15)
     targetcar5 = data.TargetCar()
-    targetcar5.init((37.5,-28,90),15)
+    targetcar5.init((37.5,-28,90),8)
     targetcar6 = data.TargetCar()
     targetcar6.init((35,1.5,-180),15)
     targetcar7 = data.TargetCar()
     targetcar7.init((5,1.5,-180),15)
     targetcar8 = data.TargetCar()
-    targetcar8.init((32.5,26,-90),15)
+    targetcar8.init((32.5,26,-90),10)
 
     #Initializing w-vector that defines movement of cars
-    w_value = 60
+    w_value = 65
     w_value2 = 76.5
     if realsensor:
         idxperturn = egocar._n_rays      #calculating time indices for 1 turn
@@ -102,10 +102,11 @@ def getScenario_overtake(TSIM, realsensor):
     w_curve2 = np.full(3*idxperturn, w_value2)         #curve left, -w_curve is curve right
     w_0 = np.full(3*idxperturn, 0)                  #no curve
 
-    w_lane_change_right = np.stack((-w_curve, w_curve,  w_curve, -w_curve),axis=0).flatten()
+    w_lane_change_right = np.stack((-w_curve, w_curve, w_0,w_0, w_curve, -w_curve),axis=0).flatten()
     w_lange_change_left = -w_lane_change_right
 
-    w_ego = np.stack((w_lane_change_right,w_lange_change_left),axis=0).flatten()
+    w_0_pad = np.stack((w_0, w_0, w_0,w_0, w_0, w_0),axis=0).flatten()
+    w_ego = np.stack((w_lane_change_right, w_0_pad, w_lange_change_left),axis=0).flatten()
 
     w_leftturn = np.stack((w_0, w_0, w_curve2, w_curve2, w_0, w_0, w_0, -w_curve2, -w_curve2))
 

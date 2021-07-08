@@ -1,6 +1,6 @@
 #import SensorView
 
-def getpcargsfromstream(model):
+def getPCArgsFromStream(model):
     '''
     This is a pseudo code function that extracts the information needed to calculate the lidar pointcloud
     via the sensor models from an OSI stream.
@@ -8,7 +8,7 @@ def getpcargsfromstream(model):
     :return: args: tuple of arguments which can be handed to the getPointcloud functions
     '''
 
-    #Initialize SensorView and SensorData
+    #Initialize SensorView
     #sv = SensorView()
 
     #Get attributes from SensorView
@@ -29,7 +29,7 @@ def getpcargsfromstream(model):
     #Get model spesific attributes from SensorView
     if model == "realsensor":
 
-        PC_update = 0 #from wrapper function
+        PC_update = 0 #from wrapper function or calculated here
         current_alpha = 0 #from sv.lidar_sensor_view.view_configuration.directions?
 
 
