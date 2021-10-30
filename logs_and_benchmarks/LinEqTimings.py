@@ -74,14 +74,14 @@ def matmul_small_analytical_jit(x1, x2, x3, num_segments):
 @numba.jit
 def matmul_small_nla_jit(A, t, num_segments):
   for _ in range(num_segments):
-    det = np.linalg.det(A)
+    det = np.linalg.det(A) #needed to sort out parallel lines which would lead to a singular matrix error
     res = np.linalg.inv(A) @ t
   return res
 
 @numba.jit
 def solve_small_nla_jit(A, t, num_segments):
   for _ in range(num_segments):
-    det = np.linalg.det(A)
+    det = np.linalg.det(A)  #needed to sort out parallel lines which would lead to a singular matrix error
     res2 = np.linalg.solve(A, t)
   return res2
 
